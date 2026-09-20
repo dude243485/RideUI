@@ -100,6 +100,9 @@ export const refresh = async (req, res) => {
         if (!user || user.refreshTokenHash !== hashToken(refreshToken)) {
             return res.status(401).json({ message: "Invalid refresh token" });
         }
+        if (user.status === "suspended") {
+            return res.status(403).json({ message: "Account suspended" });
+        }
 
         res.json({ accessToken: signAccessToken(user) });
     } catch {
