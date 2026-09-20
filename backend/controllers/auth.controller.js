@@ -60,7 +60,12 @@ export const googleAuth = async (req, res) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ message: "idToken is required" });
 
-    const ticket = await googleClient.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    let ticket;
+    try {
+        ticket = await googleClient.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    } catch {
+        return res.status(401).json({ message: "Invalid Google ID token" });
+    }
     const payload = ticket.getPayload();
 
     let user = await User.findOne({ googleId: payload.sub });
