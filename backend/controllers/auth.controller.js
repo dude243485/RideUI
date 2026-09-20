@@ -80,6 +80,7 @@ export const googleAuth = async (req, res) => {
         }
     }
 
+    if (user.status === "suspended") return res.status(403).json({ message: "Account suspended" });
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user);
     user.refreshTokenHash = hashToken(refreshToken);
