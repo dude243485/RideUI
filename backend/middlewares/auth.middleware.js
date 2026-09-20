@@ -7,7 +7,12 @@ export const requireAuth = (req, res, next) => {
     }
 
     try {
-        req.user = verifyAccessToken(authHeader.split(" ")[1]);
+        const decoded = verifyAccessToken(authHeader.split(" ")[1]);
+        req.user = {
+            ...decoded,
+            _id: decoded.sub,
+            id: decoded.sub,
+        };
         next();
     } catch {
         res.status(401).json({ message: "Invalid or expired token" });

@@ -6,8 +6,10 @@ import {
     me,
     refresh,
     register,
+    updateProfile,
+    updateUserStatus,
 } from "../controllers/auth.controller.js";
-import { requireAuth } from "../middlewares/auth.middleware.js";
+import { requireAuth, requireRole } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -17,5 +19,7 @@ router.post("/google", googleAuth);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 router.get("/me", requireAuth, me);
+router.patch("/profile", requireAuth, updateProfile);
+router.patch("/users/status", requireAuth, requireRole("admin"), updateUserStatus);
 
 export default router;
