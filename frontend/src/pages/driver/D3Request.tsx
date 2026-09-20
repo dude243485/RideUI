@@ -1,31 +1,55 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowDown, AlertCircle } from 'lucide-react';
 import {
   ScreenShell, Button, CountdownRing, StatusBanner, SkeletonBlock,
 } from '../../components/ui';
+import { respondToDriverRide } from '../../lib/api';
 
 type ViewState = 'loading' | 'loaded' | 'empty' | 'error';
 
 export function D3Request() {
   const navigate = useNavigate();
+  const { state } = useLocation();
   const [viewState, setViewState] = useState<ViewState>('loading');
+  const [responding, setResponding] = useState(false);
 
-  const riderName = 'Adewale';
-  const from = 'Tedder Hall';
-  const to = 'Main Gate';
+  const ride = state?.ride;
+  const riderName = ride?.rider?.name || 'Student';
+  const from = ride?.pickup?.name || ride?.pickupHub?.name || 'Tedder Hall';
+  const to = ride?.destination?.name || ride?.destinationHub?.name || 'Main Gate';
+  const fare = ride?.fare || 150;
 
   useEffect(() => {
-    const t = setTimeout(() => setViewState('loaded'), 1000);
+    const t = setTimeout(() => setViewState('loaded'), 600);
     return () => clearTimeout(t);
   }, []);
 
-  function decline() {
+  async function decline() {
+    setResponding(true);
+    if (ride?._id) {
+      try {
+        await respondToDriverRide(ride._id, 'decline');
+      } catch {
+        // Ignore
+      }
+    }
+    setResponding(false);
     navigate('/driver/home');
   }
 
-  function accept() {
-    navigate('/driver/trip');
+  async function accept() {
+    setResponding(true);
+    let matchedData = ride;
+    if (ride?._id) {
+      try {
+        matchedData = await respondToDriverRide(ride._id, 'accept');
+      } catch {
+        // Fallback for demo
+      }
+    }
+    setResponding(false);
+    navigate('/driver/trip', { state: { ride: matchedData || ride, riderName, from, to, fare } });
   }
 
   return (
@@ -65,7 +89,7 @@ export function D3Request() {
             </div>
 
             <p className="text-center text-base text-muted">
-              Request from <span className="font-bold text-ink">{riderName}</span>
+              Request from <span className="font-bold text-ink">{riderName}</span> · <span className="font-bold text-brand-600">₦{fare}</span>
             </p>
 
             <div className="bg-white border border-border rounded-xl p-6 flex flex-col items-center gap-4">
@@ -86,10 +110,20 @@ export function D3Request() {
       </div>
 
       <div className="px-4 pb-8 pt-4 flex flex-col gap-3">
-        <Button size="driver-lg" disabled={viewState !== 'loaded'} onClick={accept}>
+        <Button
+          size="driver-lg"
+          loading={responding}
+          disabled={viewState !== 'loaded'}
+          onClick={accept}
+        >
           ACCEPT
         </Button>
-        <Button variant="danger" size="driver-md" disabled={viewState !== 'loaded'} onClick={decline}>
+        <Button
+          variant="danger"
+          size="driver-md"
+          disabled={viewState !== 'loaded' || responding}
+          onClick={decline}
+        >
           DECLINE
         </Button>
       </div>

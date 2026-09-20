@@ -5,17 +5,21 @@ import { ScreenShell, BottomSheet, Button, Wordmark, StatusBanner } from '../com
 import { CampusMap, type LatLng } from '../components/CampusMap';
 import { useUserLocation } from '../lib/useUserLocation';
 
+const DEFAULT_CAMPUS_PICKUP: LatLng = { lat: 7.4416, lng: 3.9006 }; // UI Main Gate
+
 export default function R2Home() {
   const navigate = useNavigate();
   const { position, status, retry } = useUserLocation();
   const [destination, setDestination] = useState<LatLng | null>(null);
+
+  const effectivePickup = position || DEFAULT_CAMPUS_PICKUP;
 
   const pickupLabel =
     status === 'granted'
       ? 'Pickup: your location'
       : status === 'locating'
         ? 'Finding you…'
-        : 'Location off';
+        : 'Pickup: Main Gate';
 
   return (
     <ScreenShell className="bg-surface">
@@ -28,7 +32,7 @@ export default function R2Home() {
       </div>
 
       <div className="px-4 pb-2">
-        <CampusMap pickup={position} destination={destination} onPick={setDestination} />
+        <CampusMap pickup={effectivePickup} destination={destination} onPick={setDestination} />
       </div>
 
       <div className="sticky bottom-0 mt-auto">
@@ -38,26 +42,25 @@ export default function R2Home() {
           {(status === 'denied' || status === 'unavailable') && (
             <div className="mb-3">
               <StatusBanner
-                type="error"
-                message="We need your location to set your pickup point."
+                type="reconnecting"
+                message="GPS off — default pickup set to UI Main Gate."
               />
               <button onClick={retry} className="mt-2 text-brand-600 text-sm font-medium underline">
-                Try again
+                Enable device GPS
               </button>
             </div>
           )}
 
           <p className="text-sm text-muted mb-4">
-            {destination ? 'Destination pinned.' : 'Tap the map to drop a pin.'}
+            {destination ? 'Destination pinned on campus map.' : 'Tap the campus map to pick your destination.'}
           </p>
 
           <Button
             size="rider"
-            disabled={!destination || !position}
+            disabled={!destination}
             onClick={() =>
               destination &&
-              position &&
-              navigate('/drivers', { state: { destination, pickup: position } })
+              navigate('/drivers', { state: { destination, pickup: effectivePickup } })
             }
           >
             {destination ? 'Confirm destination' : 'Select a destination'}

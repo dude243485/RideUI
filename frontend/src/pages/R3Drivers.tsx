@@ -7,11 +7,12 @@ import {
 } from '../components/ui';
 import type { LatLng } from '../components/CampusMap';
 import { useFare } from '../lib/useFare';
+import { bookRide } from '../lib/api';
 
-const DRIVERS = [
-  { rank: 1, name: 'Musa A.', initials: 'MA', vehicle: 'Keke', eta: '2 min away' },
-  { rank: 2, name: 'Tunde O.', initials: 'TO', vehicle: 'Keke', eta: '4 min away' },
-  { rank: 3, name: 'Ibrahim S.', initials: 'IS', vehicle: 'Bus', eta: '6 min away' },
+const DEFAULT_DRIVERS = [
+  { rank: 1, driverId: 'mock_driver_1', name: 'Musa A.', initials: 'MA', vehicle: 'Keke', eta: '2 min away', plateNumber: 'OYO-2041' },
+  { rank: 2, driverId: 'mock_driver_2', name: 'Tunde O.', initials: 'TO', vehicle: 'Keke', eta: '4 min away', plateNumber: 'OYO-1892' },
+  { rank: 3, driverId: 'mock_driver_3', name: 'Ibrahim S.', initials: 'IS', vehicle: 'Car', eta: '6 min away', plateNumber: 'OYO-3044' },
 ];
 
 type ViewState = 'loading' | 'loaded' | 'empty' | 'error';
@@ -21,21 +22,69 @@ export function R3Drivers() {
   const { state } = useLocation();
   const [viewState, setViewState] = useState<ViewState>('loading');
   const [selectedRank, setSelectedRank] = useState(1);
+  const [booking, setBooking] = useState(false);
 
   const pickup: LatLng | undefined = state?.pickup;
   const to: LatLng | undefined = state?.destination;
 
-  const { fare, status: fareStatus, retry } = useFare(pickup, to);
+  const { fare, serviceType, tier, distanceKm, suggestedDrivers, status: fareStatus, retry } = useFare(pickup, to);
+
+  const driverList = (suggestedDrivers && suggestedDrivers.length > 0)
+    ? suggestedDrivers.map((d, index) => ({
+        rank: index + 1,
+        driverId: d.driverId,
+        name: d.name,
+        initials: d.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'DR',
+        vehicle: d.vehicleType === 'car' ? 'Car' : 'Keke',
+        plateNumber: d.plateNumber,
+        eta: `${Math.max(1, Math.round((d.distanceKm || 0.5) * 3))} min away`,
+      }))
+    : DEFAULT_DRIVERS;
 
   useEffect(() => {
-    const t = setTimeout(() => setViewState('loaded'), 1200);
-    return () => clearTimeout(t);
-  }, []);
+    if (fareStatus === 'loaded' || fareStatus === 'error') {
+      setViewState('loaded');
+    } else {
+      const t = setTimeout(() => setViewState('loaded'), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [fareStatus]);
 
   if (!to || !pickup) return <Navigate to="/home" replace />;
 
-  const selectedDriver = DRIVERS.find((d) => d.rank === selectedRank);
-  const canConfirm = viewState === 'loaded' && fareStatus === 'loaded';
+  const selectedDriver = driverList.find((d) => d.rank === selectedRank) || driverList[0];
+  const canConfirm = !booking && (fare !== null || fareStatus === 'loaded');
+
+  async function handleConfirmRide() {
+    if (!selectedDriver) return;
+    setBooking(true);
+    let rideData: any = null;
+
+    try {
+      rideData = await bookRide({
+        pickup: { lat: pickup!.lat, lng: pickup!.lng, name: 'Campus Pickup' },
+        destination: { lat: to!.lat, lng: to!.lng, name: 'Campus Destination' },
+        driverId: selectedDriver.driverId,
+      });
+    } catch (err) {
+      console.warn('Backend ride request fallback for demo:', err);
+    }
+
+    setBooking(false);
+    navigate('/waiting', {
+      state: {
+        destination: to,
+        pickup,
+        driver: selectedDriver,
+        fare: fare || 150,
+        serviceType: serviceType || 'Shared Car/Keke',
+        tier,
+        distanceKm,
+        rideId: rideData?._id || 'demo_ride_' + Date.now(),
+        ride: rideData,
+      },
+    });
+  }
 
   return (
     <ScreenShell>
@@ -48,7 +97,7 @@ export function R3Drivers() {
         <div className="flex items-center gap-2 mt-3 bg-white border border-border rounded-xl px-4 py-3">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-muted uppercase tracking-wide">From</p>
-            <p className="text-sm font-semibold text-ink truncate">Near Tedder Hall</p>
+            <p className="text-sm font-semibold text-ink truncate">Campus Pickup</p>
           </div>
           <ArrowRight size={16} className="text-brand-600 flex-shrink-0" />
           <div className="flex-1 min-w-0 text-right">
@@ -81,8 +130,16 @@ export function R3Drivers() {
 
         {viewState === 'loaded' && (
           <>
-            <p className="text-sm text-muted">{DRIVERS.length} drivers nearby</p>
-            {DRIVERS.map((d) => (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted">{driverList.length} drivers nearby</p>
+              {serviceType && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-600 border border-brand-600">
+                  {serviceType}
+                </span>
+              )}
+            </div>
+
+            {driverList.map((d) => (
               <DriverCard
                 key={d.rank}
                 {...d}
@@ -96,12 +153,20 @@ export function R3Drivers() {
 
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] px-4 pb-6 pt-4 bg-surface border-t border-border flex flex-col gap-3">
         <div className="flex items-center justify-between bg-white border border-border rounded-xl px-4 py-3 min-h-[68px]">
-          <p className="text-xs text-muted uppercase tracking-wide">Estimated fare</p>
+          <div>
+            <p className="text-xs text-muted uppercase tracking-wide">Estimated fare</p>
+            {distanceKm != null && (
+              <p className="text-xs text-muted mt-0.5">{distanceKm} km campus distance</p>
+            )}
+          </div>
 
           {fareStatus === 'loading' && <SkeletonBlock h="h-8" w="w-24" />}
 
           {fareStatus === 'loaded' && fare !== null && (
-            <p className="text-2xl font-bold text-ink">₦{fare.toLocaleString()}</p>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-ink">₦{fare.toLocaleString()}</p>
+              {tier && <p className="text-[11px] text-brand-600 font-medium">Tier {tier} rate</p>}
+            </div>
           )}
 
           {fareStatus === 'error' && (
@@ -113,12 +178,9 @@ export function R3Drivers() {
 
         <Button
           size="rider"
+          loading={booking}
           disabled={!canConfirm}
-          onClick={() =>
-            navigate('/waiting', {
-              state: { destination: to, pickup, driver: selectedDriver, fare },
-            })
-          }
+          onClick={handleConfirmRide}
         >
           Confirm ride with {selectedDriver?.name ?? '—'}
         </Button>

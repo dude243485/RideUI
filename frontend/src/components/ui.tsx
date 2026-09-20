@@ -1,16 +1,5 @@
 import { ChevronRight, Loader2, CheckCircle2, XCircle, WifiOff } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-
-const STOP_COORDS: Record<string, [number, number]> = {
-  'Main Gate':       [7.4400, 3.9000],
-  'Faculty of Tech': [7.4420, 3.9040],
-  'Library (KDL)':   [7.4435, 3.9000],
-  'Tedder Hall':     [7.4450, 3.8980],
-  'Bookshop':        [7.4430, 3.9020],
-  'UCH Gate':        [7.4380, 3.9060],
-};
+import { useState, useEffect } from 'react';
 
 // ─── Wordmark ─────────────────────────────────────────────────────────────────
 

@@ -5,6 +5,7 @@ import {
   ScreenShell, CountdownRing, Button, StatusBanner,
   SkeletonBlock,
 } from '../components/ui';
+import { getRideDetails, cancelRideRequest } from '../lib/api';
 
 type ViewState = 'loading' | 'loaded' | 'empty' | 'error';
 
@@ -16,13 +17,59 @@ export function R4Waiting() {
 
   const driver = state?.driver;
   const destination = state?.destination;
+  const rideId = state?.rideId;
 
   useEffect(() => {
-    const t = setTimeout(() => setViewState('loaded'), 1000);
+    const t = setTimeout(() => setViewState('loaded'), 800);
     return () => clearTimeout(t);
   }, []);
 
+  // Poll ride status if real rideId exists
+  useEffect(() => {
+    if (!rideId || String(rideId).startsWith('demo_')) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const ride = await getRideDetails(rideId);
+        if (ride?.status === 'matched') {
+          navigate('/matched', {
+            state: {
+              driver: {
+                ...driver,
+                name: ride.driver?.user?.name || driver.name,
+                vehicle: ride.driver?.vehicleType || driver.vehicle,
+                plateNumber: ride.driver?.plateNumber || driver.plateNumber || 'KK-4521-OY',
+                phone: ride.driver?.user?.phone,
+              },
+              destination,
+              rideId,
+              ride,
+              fare: ride.fare || state?.fare,
+            },
+          });
+        } else if (ride?.status === 'cancelled') {
+          setExpired(true);
+        }
+      } catch {
+        // Ignore polling glitches
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [rideId, driver, destination, navigate, state?.fare]);
+
   if (!driver) return <Navigate to="/home" replace />;
+
+  async function handleCancel() {
+    if (rideId && !String(rideId).startsWith('demo_')) {
+      try {
+        await cancelRideRequest(rideId);
+      } catch {
+        // Ignore
+      }
+    }
+    navigate('/home');
+  }
 
   return (
     <ScreenShell>
@@ -76,7 +123,7 @@ export function R4Waiting() {
       </div>
 
       <div className="px-4 pb-8 pt-4 flex flex-col gap-4">
-        <Button variant="danger" size="rider" onClick={() => navigate('/home')}>
+        <Button variant="danger" size="rider" onClick={handleCancel}>
           Cancel request
         </Button>
 
@@ -84,7 +131,16 @@ export function R4Waiting() {
           <Button
             variant="primary"
             size="rider"
-            onClick={() => navigate('/matched', { state: { driver, destination } })}
+            onClick={() =>
+              navigate('/matched', {
+                state: {
+                  driver,
+                  destination,
+                  rideId,
+                  fare: state?.fare,
+                },
+              })
+            }
           >
             Skip to matched (demo)
           </Button>

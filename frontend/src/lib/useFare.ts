@@ -3,8 +3,21 @@ import type { LatLng } from '../components/CampusMap';
 
 type FareStatus = 'loading' | 'loaded' | 'error';
 
+export interface DriverSuggestion {
+  driverId: string;
+  name: string;
+  phone?: string;
+  vehicleType: string;
+  plateNumber: string;
+  distanceKm: number;
+}
+
 export function useFare(pickup?: LatLng, destination?: LatLng) {
   const [fare, setFare] = useState<number | null>(null);
+  const [serviceType, setServiceType] = useState<string | null>(null);
+  const [tier, setTier] = useState<string | null>(null);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [suggestedDrivers, setSuggestedDrivers] = useState<DriverSuggestion[]>([]);
   const [status, setStatus] = useState<FareStatus>('loading');
 
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -18,8 +31,12 @@ export function useFare(pickup?: LatLng, destination?: LatLng) {
         signal,
       });
       if (!res.ok) throw new Error('Fare request failed');
-      const data: { fare: number } = await res.json();
+      const data = await res.json();
       setFare(data.fare);
+      setServiceType(data.serviceType || 'Keke Drop');
+      setTier(data.tier || null);
+      setDistanceKm(data.distanceKm ?? null);
+      setSuggestedDrivers(data.suggestedDrivers || []);
       setStatus('loaded');
     } catch (err) {
       if ((err as Error).name !== 'AbortError') setStatus('error');
@@ -32,5 +49,5 @@ export function useFare(pickup?: LatLng, destination?: LatLng) {
     return () => controller.abort();
   }, [load]);
 
-  return { fare, status, retry: () => load() };
+  return { fare, serviceType, tier, distanceKm, suggestedDrivers, status, retry: () => load() };
 }
