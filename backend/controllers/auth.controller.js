@@ -68,6 +68,9 @@ export const googleAuth = async (req, res) => {
     }
     const payload = ticket.getPayload();
 
+    if (!payload?.email || payload.email_verified !== true) {
+        return res.status(401).json({ message: "Google email is not verified" });
+    }
     let user = await User.findOne({ googleId: payload.sub });
 
     if (!user) {
