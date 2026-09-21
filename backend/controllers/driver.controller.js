@@ -59,88 +59,46 @@ export async function updateStatusAndHub(req, res) {
   }
 }
 
-// POST /drivers/seed-demo   Seed or activate 3 real drivers in MongoDB for immediate demo evaluation
+// POST /drivers/seed-demo   Seed or activate drivers in MongoDB for immediate demo evaluation
 export async function seedDemoDrivers(req, res) {
   try {
-    const Hub = (await import('../models/Hub.js')).default;
-    const hubs = await Hub.find();
-    const mainGate = hubs.find((h) => h.name === 'Main Gate') || hubs[0];
-    const tedder = hubs.find((h) => h.name === 'Tedder Hall') || hubs[1];
-    const tech = hubs.find((h) => h.name === 'Faculty of Technology') || hubs[2];
+    const { seedCustomDrivers } = await import('../seed/seed-drivers.js');
+    const count = parseInt(req.body?.count || req.query?.count || 50, 10);
+    const created = await seedCustomDrivers(count);
 
-    const demoDrivers = [
-      {
-        name: 'Musa Alao',
-        email: 'musa.alao@driver.ui.edu.ng',
-        phone: '08034567891',
-        vehicleType: 'keke',
-        plateNumber: 'OYO-4521-KK',
-        hub: mainGate?._id,
-        coords: { lat: 7.4416, lng: 3.9006 },
+    res.json({
+      message: `Successfully seeded and activated ${created.length} live campus transporters in MongoDB`,
+      count: created.length,
+      sampleCredentials: {
+        email: 'driver1@test.com',
+        password: 'password123',
+        phone: '08030000001',
       },
-      {
-        name: 'Tunde Oladipo',
-        email: 'tunde.oladipo@driver.ui.edu.ng',
-        phone: '08056789123',
-        vehicleType: 'keke',
-        plateNumber: 'OYO-7832-KK',
-        hub: tedder?._id,
-        coords: { lat: 7.4452, lng: 3.8998 },
+      drivers: created.slice(0, 10),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// POST /drivers/seed-many   Seed 100-250 drivers with custom format (driver1@test.com ...)
+export async function seedManyDrivers(req, res) {
+  try {
+    const { seedCustomDrivers } = await import('../seed/seed-drivers.js');
+    const requestedCount = parseInt(req.body?.count || req.query?.count || 150, 10);
+    const count = Math.min(250, Math.max(10, requestedCount));
+    const created = await seedCustomDrivers(count);
+
+    res.json({
+      message: `Successfully seeded and activated ${created.length} drivers in MongoDB`,
+      count: created.length,
+      sampleCredentials: {
+        email: 'driver1@test.com',
+        password: 'password123',
+        phone: '08030000001',
       },
-      {
-        name: 'Ibrahim Sanni',
-        email: 'ibrahim.sanni@driver.ui.edu.ng',
-        phone: '08023456789',
-        vehicleType: 'car',
-        plateNumber: 'OYO-1190-CR',
-        hub: tech?._id,
-        coords: { lat: 7.4490, lng: 3.9050 },
-      },
-    ];
-
-    const created = [];
-    for (const d of demoDrivers) {
-      let user = await User.findOne({ email: d.email });
-      if (!user) {
-        user = await User.create({
-          name: d.name,
-          email: d.email,
-          phone: d.phone,
-          passwordHash: 'dummy',
-          role: 'driver',
-        });
-      } else {
-        user.phone = d.phone;
-        user.name = d.name;
-        await user.save();
-      }
-
-      const profile = await DriverProfile.findOneAndUpdate(
-        { user: user._id },
-        {
-          $set: {
-            user: user._id,
-            vehicleType: d.vehicleType,
-            plateNumber: d.plateNumber,
-            status: 'available',
-            currentHub: d.hub || null,
-            currentCoordinates: d.coords,
-          },
-        },
-        { upsert: true, new: true }
-      ).populate('user', 'name phone');
-
-      created.push({
-        driverId: profile._id,
-        name: user.name,
-        phone: user.phone,
-        vehicleType: profile.vehicleType,
-        plateNumber: profile.plateNumber,
-        status: profile.status,
-      });
-    }
-
-    res.json({ message: 'Live campus transporters activated in database', drivers: created });
+      drivers: created.slice(0, 15),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

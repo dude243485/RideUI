@@ -1,4 +1,6 @@
 import DriverProfile from '../models/DriverProfile.js';
+import User from '../models/User.js';
+import Hub from '../models/Hub.js';
 import { distanceKm } from './geo.js';
 
 /**
