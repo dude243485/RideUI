@@ -20,7 +20,9 @@ export const DROP_FARES = {
 export const TARIFF_DESTINATIONS = {
   A: [
     'Independence Hall',
+    'Indy',
     'Azikiwe Hall',
+    'Zik',
     'Queens Hall',
     'Bookshop',
     'Tedder Hall',
@@ -31,14 +33,30 @@ export const TARIFF_DESTINATIONS = {
     'Mosque',
     'Kuti',
     'Faculty of Arts',
+    'Jaja Clinic',
+    'Jaja',
+    'Sultan Bello Hall',
+    'Bello',
+    'Kenneth Dike Library',
+    'Library',
+    'Trenchard Hall',
+    'Trenchard',
+    'UI Zoo',
+    'Zoo',
+    'Oduduwa Road',
   ],
   B: [
     'Benue Road',
+    'Barth Road',
+    'Abadina Road',
     'Faculty of Education',
     'Faculty of Agriculture',
     'Faculty of Technology',
+    'Faculty of Science',
     'Faculty of Law',
     'Faculty of Social Sciences',
+    'Faculty of Pharmacy',
+    'Faculty of Veterinary Medicine',
     'Botany',
     'Awo Hall',
     'Idia Hall',
@@ -79,7 +97,14 @@ export function getTierForDestination(destName) {
   const normalized = destName.trim().toLowerCase();
 
   for (const [tier, destinations] of Object.entries(TARIFF_DESTINATIONS)) {
-    if (destinations.some((d) => d.toLowerCase() === normalized)) {
+    if (
+      destinations.some(
+        (d) =>
+          d.toLowerCase() === normalized ||
+          normalized.includes(d.toLowerCase()) ||
+          d.toLowerCase().includes(normalized)
+      )
+    ) {
       return tier;
     }
   }

@@ -3,14 +3,45 @@ import {
   MapContainer, TileLayer, CircleMarker, Tooltip, useMap, useMapEvents,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { CAMPUS_LANDMARKS } from '../lib/geoUtils';
 
 export type LatLng = { lat: number; lng: number };
 
-const CENTER: [number, number] = [7.4425, 3.9015];
+const CENTER: [number, number] = [7.4450, 3.9000]; // Centered on UI heart (between Trenchard, KDL, Jaja & SUB)
 const BOUNDS: [[number, number], [number, number]] = [
-  [7.425, 3.88],
-  [7.46, 3.925],
+  [7.420, 3.875],
+  [7.475, 3.935],
 ];
+
+// Highlighted POIs rendered as interactive quick-tap nodes on the campus map
+const INTERACTIVE_POIS = CAMPUS_LANDMARKS.filter((l) =>
+  [
+    'Jaja Clinic (University Health Services)',
+    'Independence Hall (Indy Katanga)',
+    'Nnamdi Azikiwe Hall (Zik Baluba)',
+    'Trenchard Hall',
+    'Kenneth Dike Library (Main Library)',
+    'Sultan Bello Hall',
+    'Tedder Hall',
+    'Mellanby Hall',
+    'Kuti Hall',
+    'Queen Elizabeth II Hall (Queens Hall)',
+    'Queen Idia Hall',
+    'Obafemi Awolowo Hall (Awo Hall)',
+    'Faculty of Technology Complex',
+    'Faculty of Arts (Faculty Square)',
+    'Faculty of Science (Deans Office)',
+    'Faculty of Education',
+    'Faculty of Agriculture & Forestry',
+    'Student Union Building (S.U.B)',
+    'Barth Road (near Jaja Clinic)',
+    'Benue Road (SUB & Mellanby Junction)',
+    'Abadina Road (near Abadina Gate)',
+    'UI Zoological Gardens (Zoo)',
+    'UI Main Gate',
+    'Awo Stadium',
+  ].includes(l.name)
+);
 
 function ClickPicker({ onPick }: { onPick: (p: LatLng) => void }) {
   useMapEvents({
@@ -65,28 +96,69 @@ export function CampusMap({
         <ClickPicker onPick={onPick} />
         <FlyToPosition position={pickup} />
 
+        {/* Visible Campus Landmark & Road Nodes */}
+        {INTERACTIVE_POIS.map((poi) => {
+          const isPickup = pickup && Math.abs(pickup.lat - poi.lat) < 0.0003 && Math.abs(pickup.lng - poi.lng) < 0.0003;
+          const isDest = destination && Math.abs(destination.lat - poi.lat) < 0.0003 && Math.abs(destination.lng - poi.lng) < 0.0003;
+          if (isPickup || isDest) return null;
+
+          const isRoad = poi.type === 'road';
+          const isHealth = poi.type === 'health';
+          const isHostel = poi.type === 'hostel';
+
+          const fillColor = isHealth ? '#DC2626' : isHostel ? '#8B5CF6' : isRoad ? '#F59E0B' : '#64748B';
+
+          return (
+            <CircleMarker
+              key={poi.name}
+              center={[poi.lat, poi.lng]}
+              radius={isRoad ? 4 : 5}
+              eventHandlers={{
+                click: (e) => {
+                  e.originalEvent.stopPropagation();
+                  onPick({ lat: poi.lat, lng: poi.lng });
+                },
+              }}
+              pathOptions={{
+                color: '#ffffff',
+                weight: 1.5,
+                fillColor,
+                fillOpacity: 0.85,
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -6]} opacity={0.9}>
+                <span className="font-bold text-[11px] text-ink">
+                  {poi.shortName || poi.name}
+                </span>
+              </Tooltip>
+            </CircleMarker>
+          );
+        })}
+
+        {/* User's Pickup Point */}
         {pickup && (
           <CircleMarker
             center={[pickup.lat, pickup.lng]}
-            radius={9}
+            radius={10}
             pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#2563EB', fillOpacity: 1 }}
           >
             <Tooltip permanent direction="top" offset={[0, -10]}>
-              <span className="font-semibold text-xs text-brand-600">
+              <span className="font-semibold text-xs text-brand-600 bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-brand-200">
                 📍 {pickupName || 'Pickup Point'}
               </span>
             </Tooltip>
           </CircleMarker>
         )}
 
+        {/* Selected Destination Point */}
         {destination && (
           <CircleMarker
             center={[destination.lat, destination.lng]}
-            radius={10}
+            radius={11}
             pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#0B7A4B', fillOpacity: 1 }}
           >
             <Tooltip permanent direction="top" offset={[0, -10]}>
-              <span className="font-semibold text-xs text-accent">
+              <span className="font-semibold text-xs text-accent bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-accent/40">
                 🎯 {destinationName || 'Destination'}
               </span>
             </Tooltip>
@@ -94,7 +166,7 @@ export function CampusMap({
         )}
       </MapContainer>
 
-      {/* Floating Working Re-calibrate GPS Button */}
+      {/* Floating Re-calibrate GPS Button */}
       {onRecalibrate && (
         <button
           type="button"
@@ -122,6 +194,14 @@ export function CampusMap({
           {recalibrating ? 'Calibrating…' : 'Re-calibrate GPS'}
         </button>
       )}
+
+      {/* Campus Map Legend Pill */}
+      <div className="absolute bottom-2 left-3 z-10 bg-white/90 backdrop-blur border border-border rounded-lg px-2 py-1 text-[10px] text-muted flex items-center gap-2 shadow-sm pointer-events-none">
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-600 inline-block" /> Clinic</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-600 inline-block" /> Halls</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Roads</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-500 inline-block" /> Faculties</span>
+      </div>
     </div>
   );
 }

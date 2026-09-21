@@ -15,13 +15,43 @@ export const campusHubsData = [
   {
     name: 'Independence Hall',
     type: 'hostel',
-    coordinates: { lat: 7.4435, lng: 3.8965 },
+    coordinates: { lat: 7.4468, lng: 3.8936 },
     tariffTier: 'A',
   },
   {
     name: 'Azikiwe Hall',
     type: 'hostel',
-    coordinates: { lat: 7.4428, lng: 3.8972 },
+    coordinates: { lat: 7.4440, lng: 3.8945 },
+    tariffTier: 'A',
+  },
+  {
+    name: 'Jaja Clinic',
+    type: 'landmark',
+    coordinates: { lat: 7.4472, lng: 3.8968 },
+    tariffTier: 'A',
+  },
+  {
+    name: 'Sultan Bello Hall',
+    type: 'hostel',
+    coordinates: { lat: 7.4455, lng: 3.8985 },
+    tariffTier: 'A',
+  },
+  {
+    name: 'Kenneth Dike Library',
+    type: 'landmark',
+    coordinates: { lat: 7.4446, lng: 3.9002 },
+    tariffTier: 'A',
+  },
+  {
+    name: 'Trenchard Hall',
+    type: 'landmark',
+    coordinates: { lat: 7.4438, lng: 3.9006 },
+    tariffTier: 'A',
+  },
+  {
+    name: 'UI Zoo',
+    type: 'landmark',
+    coordinates: { lat: 7.4422, lng: 3.8982 },
     tariffTier: 'A',
   },
   {
@@ -86,6 +116,24 @@ export const campusHubsData = [
   },
 
   // Tier B Destinations (₦150 shared)
+  {
+    name: 'Barth Road',
+    type: 'other',
+    coordinates: { lat: 7.4473, lng: 3.8972 },
+    tariffTier: 'B',
+  },
+  {
+    name: 'Abadina Road',
+    type: 'other',
+    coordinates: { lat: 7.4525, lng: 3.9068 },
+    tariffTier: 'B',
+  },
+  {
+    name: 'Faculty of Science',
+    type: 'faculty',
+    coordinates: { lat: 7.4458, lng: 3.9030 },
+    tariffTier: 'B',
+  },
   {
     name: 'Benue Road',
     type: 'other',
