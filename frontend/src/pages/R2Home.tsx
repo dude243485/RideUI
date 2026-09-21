@@ -10,14 +10,16 @@ const DEFAULT_CAMPUS_PICKUP: LatLng = { lat: 7.4416, lng: 3.9006 }; // UI Main G
 
 // Quick popular UI destinations for instant selection
 const POPULAR_DESTINATIONS = [
-  { label: 'Jaja Clinic', name: 'Jaja Clinic (University Health Services)' },
   { label: 'Indy Hall', name: 'Independence Hall (Indy Katanga)' },
+  { label: 'Abu Bakar Salam', name: 'Abu Bakar Salam P. G. Hall' },
   { label: 'Zik Hall', name: 'Nnamdi Azikiwe Hall (Zik Baluba)' },
+  { label: 'Jaja Clinic', name: 'Jaja Clinic (University Health Services)' },
+  { label: 'Barth Road', name: 'Barth Road (near Independence Hall)' },
+  { label: 'Appleton Road', name: 'Appleton Road' },
   { label: 'KD Library', name: 'Kenneth Dike Library (Main Library)' },
   { label: 'Trenchard Hall', name: 'Trenchard Hall' },
   { label: 'Faculty of Tech', name: 'Faculty of Technology Complex' },
-  { label: 'Barth Road', name: 'Barth Road (near Jaja Clinic)' },
-  { label: 'Benue Road', name: 'Benue Road (SUB & Mellanby Junction)' },
+  { label: 'Benue Road', name: 'Benue Road' },
   { label: 'Abadina Road', name: 'Abadina Road (near Abadina Gate)' },
   { label: 'Queens Hall', name: 'Queen Elizabeth II Hall (Queens Hall)' },
   { label: 'Awo Hall', name: 'Obafemi Awolowo Hall (Awo Hall)' },
@@ -25,8 +27,8 @@ const POPULAR_DESTINATIONS = [
   { label: 'Tedder Hall', name: 'Tedder Hall' },
   { label: 'Mellanby Hall', name: 'Mellanby Hall' },
   { label: 'Sultan Bello Hall', name: 'Sultan Bello Hall' },
-  { label: 'Faculty of Arts', name: 'Faculty of Arts (Faculty Square)' },
-  { label: 'Faculty of Science', name: 'Faculty of Science (Deans Office)' },
+  { label: 'Faculty of Arts', name: 'Faculty of Arts' },
+  { label: 'Faculty of Science', name: 'Faculty of Science' },
   { label: 'UI Zoo', name: 'UI Zoological Gardens (Zoo)' },
   { label: 'Main Gate', name: 'UI Main Gate' },
 ].map((item) => {

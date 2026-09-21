@@ -7,7 +7,7 @@ import { CAMPUS_LANDMARKS } from '../lib/geoUtils';
 
 export type LatLng = { lat: number; lng: number };
 
-const CENTER: [number, number] = [7.4450, 3.9000]; // Centered on UI heart (between Trenchard, KDL, Jaja & SUB)
+const CENTER: [number, number] = [7.4420, 3.8985]; // Centered across Indy, Zik, SUB, Jaja, and Central Campus
 const BOUNDS: [[number, number], [number, number]] = [
   [7.420, 3.875],
   [7.475, 3.935],
@@ -16,9 +16,14 @@ const BOUNDS: [[number, number], [number, number]] = [
 // Highlighted POIs rendered as interactive quick-tap nodes on the campus map
 const INTERACTIVE_POIS = CAMPUS_LANDMARKS.filter((l) =>
   [
-    'Jaja Clinic (University Health Services)',
     'Independence Hall (Indy Katanga)',
+    'Abu Bakar Salam P. G. Hall',
     'Nnamdi Azikiwe Hall (Zik Baluba)',
+    'Jaja Clinic (University Health Services)',
+    'Barth Road (near Independence Hall)',
+    'Barth Road (near Jaja Clinic)',
+    'Appleton Road',
+    'Tafawa Balewa Hall',
     'Trenchard Hall',
     'Kenneth Dike Library (Main Library)',
     'Sultan Bello Hall',
@@ -29,13 +34,11 @@ const INTERACTIVE_POIS = CAMPUS_LANDMARKS.filter((l) =>
     'Queen Idia Hall',
     'Obafemi Awolowo Hall (Awo Hall)',
     'Faculty of Technology Complex',
-    'Faculty of Arts (Faculty Square)',
-    'Faculty of Science (Deans Office)',
+    'Faculty of Arts',
+    'Faculty of Science',
     'Faculty of Education',
-    'Faculty of Agriculture & Forestry',
     'Student Union Building (S.U.B)',
-    'Barth Road (near Jaja Clinic)',
-    'Benue Road (SUB & Mellanby Junction)',
+    'Benue Road',
     'Abadina Road (near Abadina Gate)',
     'UI Zoological Gardens (Zoo)',
     'UI Main Gate',
