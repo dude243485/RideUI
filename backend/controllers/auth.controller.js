@@ -70,6 +70,9 @@ export const register = async (req, res) => {
 
         sendAuthResponse(res, user, accessToken, refreshToken);
     } catch (err) {
+        if (err.code === 11000) {
+            return res.status(409).json({ message: "An account with this email or phone number already exists. Please sign in." });
+        }
         res.status(500).json({ message: err.message });
     }
 };
