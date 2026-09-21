@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   MapContainer, TileLayer, CircleMarker, Tooltip, useMap, useMapEvents,
 } from 'react-leaflet';
@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import { CAMPUS_LANDMARKS } from '../lib/geoUtils';
 
 export type LatLng = { lat: number; lng: number };
+export type MapLayerMode = 'streets' | 'satellite' | 'osm';
 
 const CENTER: [number, number] = [7.4420, 3.8985]; // Centered across Indy, Zik, SUB, Jaja, and Central Campus
 const BOUNDS: [[number, number], [number, number]] = [
@@ -82,6 +83,15 @@ export function CampusMap({
   onRecalibrate?: () => void;
   recalibrating?: boolean;
 }) {
+  const [layerMode, setLayerMode] = useState<MapLayerMode>(() => {
+    return (localStorage.getItem('rideui_map_layer') as MapLayerMode) || 'streets';
+  });
+
+  const handleSwitchLayer = (mode: MapLayerMode) => {
+    setLayerMode(mode);
+    localStorage.setItem('rideui_map_layer', mode);
+  };
+
   return (
     <div className="relative w-full rounded-2xl overflow-hidden shadow-inner border border-border">
       <MapContainer
@@ -92,10 +102,42 @@ export function CampusMap({
         maxBoundsViscosity={1.0}
         className="h-[46vh] w-full z-0"
       >
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {layerMode === 'streets' && (
+          <TileLayer
+            key="carto-voyager"
+            attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            maxZoom={19}
+          />
+        )}
+
+        {layerMode === 'satellite' && (
+          <>
+            <TileLayer
+              key="esri-satellite"
+              attribution="&copy; Esri, Maxar, Earthstar Geographics"
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+            />
+            <TileLayer
+              key="satellite-labels"
+              attribution=""
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png"
+              maxZoom={19}
+              opacity={0.85}
+            />
+          </>
+        )}
+
+        {layerMode === 'osm' && (
+          <TileLayer
+            key="osm-classic"
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+          />
+        )}
+
         <ClickPicker onPick={onPick} />
         <FlyToPosition position={pickup} />
 
@@ -168,6 +210,48 @@ export function CampusMap({
           </CircleMarker>
         )}
       </MapContainer>
+
+      {/* Floating Map Style Switcher (Streets / Satellite / OSM) */}
+      <div className="absolute top-3 left-3 z-10 flex items-center bg-white/95 backdrop-blur border border-border shadow-md rounded-xl p-0.5 text-xs font-semibold">
+        <button
+          type="button"
+          onClick={() => handleSwitchLayer('streets')}
+          className={`px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 text-[11px] font-medium ${
+            layerMode === 'streets'
+              ? 'bg-brand-600 text-white shadow-sm font-bold'
+              : 'text-muted hover:text-ink'
+          }`}
+          title="Clean Street Map"
+        >
+          <span>🗺️</span>
+          <span>Streets</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSwitchLayer('satellite')}
+          className={`px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 text-[11px] font-medium ${
+            layerMode === 'satellite'
+              ? 'bg-brand-600 text-white shadow-sm font-bold'
+              : 'text-muted hover:text-ink'
+          }`}
+          title="Aerial Satellite Photography"
+        >
+          <span>🛰️</span>
+          <span>Satellite</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSwitchLayer('osm')}
+          className={`px-2 py-1.5 rounded-lg transition-all text-[11px] font-medium ${
+            layerMode === 'osm'
+              ? 'bg-brand-600 text-white shadow-sm font-bold'
+              : 'text-muted hover:text-ink'
+          }`}
+          title="Classic OpenStreetMap"
+        >
+          <span>OSM</span>
+        </button>
+      </div>
 
       {/* Floating Re-calibrate GPS Button */}
       {onRecalibrate && (
