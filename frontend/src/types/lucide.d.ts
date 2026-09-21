@@ -7,6 +7,7 @@ declare module 'lucide-react' {
     className?: string;
   }
   export type Icon = React.FC<IconProps>;
+
   export const ChevronRight: Icon;
   export const Loader2: Icon;
   export const CheckCircle2: Icon;
@@ -21,10 +22,16 @@ declare module 'lucide-react' {
   export const Star: Icon;
   export const Clock: Icon;
   export const Shield: Icon;
+  export const ShieldCheck: Icon;
   export const Check: Icon;
   export const ThumbsUp: Icon;
   export const ThumbsDown: Icon;
   export const Bell: Icon;
+  export const Compass: Icon;
+  export const Navigation: Icon;
+  export const RefreshCw: Icon;
+  export const UserCheck: Icon;
+
   const icons: { [key: string]: Icon };
   export default icons;
 }

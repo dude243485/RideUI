@@ -86,10 +86,6 @@ export async function requestRide(req, res) {
     const { pickupHubId, destinationHubId, pickup, destination, driverId } = req.body;
     const riderId = req.user._id || req.user.sub;
 
-    if (!driverId) {
-      return res.status(400).json({ error: 'Driver ID is required' });
-    }
-
     let pickupHub = null;
     let destinationHub = null;
 
@@ -105,17 +101,17 @@ export async function requestRide(req, res) {
 
     const pickupObj = pickupHub
       ? { name: pickupHub.name, coordinates: pickupHub.coordinates, tariffTier: pickupHub.tariffTier }
-      : { name: pickup?.name || 'Custom Location', coordinates: pickupCoords };
+      : { name: pickup?.name || 'Campus Location', coordinates: pickupCoords };
 
     const destObj = destinationHub
       ? { name: destinationHub.name, coordinates: destinationHub.coordinates, tariffTier: destinationHub.tariffTier }
-      : { name: destination?.name || 'Custom Destination', coordinates: destCoords };
+      : { name: destination?.name || 'Campus Destination', coordinates: destCoords };
 
     const { distanceKm, fare, serviceType, tier } = estimateFare(pickupObj, destObj);
 
     const ride = await Ride.create({
       rider: riderId,
-      driver: driverId,
+      driver: driverId || null,
       pickupHub: pickupHub?._id || null,
       destinationHub: destinationHub?._id || null,
       pickup: {
@@ -181,13 +177,26 @@ export async function respondToRide(req, res) {
       return res.status(400).json({ error: 'Action must be "accept" or "decline"' });
     }
 
+    const userId = req.user._id || req.user.sub;
+    const driverProfile = await DriverProfile.findOne({ user: userId });
+    if (driverProfile) {
+      ride.driver = driverProfile._id;
+    }
+
     ride.status = 'matched';
     ride.matchedAt = new Date();
     await ride.save();
 
-    if (ride.driver?._id) {
-      await DriverProfile.findByIdAndUpdate(ride.driver._id, { status: 'busy' });
+    const driverIdToUpdate = ride.driver?._id || ride.driver;
+    if (driverIdToUpdate) {
+      await DriverProfile.findByIdAndUpdate(driverIdToUpdate, { status: 'busy' });
     }
+
+    // Refresh populated driver and rider
+    await ride.populate([
+      { path: 'driver', populate: { path: 'user', select: 'name phone' } },
+      { path: 'rider', select: 'name phone' }
+    ]);
 
     const matchPayload = {
       rideId: ride._id,
@@ -233,9 +242,6 @@ export async function getRideById(req, res) {
 }
 
 // GET /rides   Query rides (driver dashboard feed, rider history)
-// Examples:
-// /rides?driver=me&status=requested -> driver dashboard feed
-// /rides?rider=me -> rider ride history
 export async function getRides(req, res) {
   try {
     const filter = {};
@@ -246,7 +252,11 @@ export async function getRides(req, res) {
       if (!driverProfile) {
         return res.status(404).json({ error: 'Driver profile not found for current user' });
       }
-      filter.driver = driverProfile._id;
+      if (req.query.status === 'requested') {
+        filter.$or = [{ driver: driverProfile._id }, { driver: null }, { status: 'requested' }];
+      } else {
+        filter.$or = [{ driver: driverProfile._id }, { driver: null }];
+      }
     } else if (req.query.driverId) {
       filter.driver = req.query.driverId;
     }
@@ -262,8 +272,8 @@ export async function getRides(req, res) {
     }
 
     const rides = await Ride.find(filter)
-      .populate('rider', 'name phone')
-      .populate({ path: 'driver', populate: { path: 'user', select: 'name phone' } })
+      .populate('rider', 'name phone email')
+      .populate({ path: 'driver', populate: { path: 'user', select: 'name phone email' } })
       .populate('pickupHub', 'name coordinates')
       .populate('destinationHub', 'name coordinates')
       .sort({ createdAt: -1 });

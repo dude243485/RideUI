@@ -62,90 +62,67 @@ async function apiFetch(url: string, options: RequestInit = {}) {
 
 // ---------------- AUTH API ----------------
 
-export async function loginRider(email: string, password = 'password123') {
-  const trimmedEmail = email.trim().toLowerCase();
-  const normalizedEmail = trimmedEmail.includes('@') ? trimmedEmail : `${trimmedEmail}@ui.edu.ng`;
-
-  try {
-    // Try logging in
-    const res = await apiFetch('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: normalizedEmail, password }),
-    });
-    setSession(res.accessToken, res.user);
-    return res;
-  } catch (err: any) {
-    // For demo ease: if rider credentials not found, auto-register and login!
-    if (err.status === 401 || err.status === 404) {
-      const regRes = await apiFetch('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: trimmedEmail.split('@')[0] || 'Rider',
-          email: normalizedEmail,
-          password,
-          role: 'rider',
-        }),
-      });
-      setSession(regRes.accessToken, regRes.user);
-      return regRes;
-    }
-    throw err;
-  }
+export async function registerRider(payload: {
+  name: string;
+  email: string;
+  phone: string;
+  password?: string;
+}) {
+  const res = await apiFetch('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      password: payload.password || 'password123',
+      role: 'rider',
+    }),
+  });
+  setSession(res.accessToken, res.user);
+  return res;
 }
 
-export async function loginDriver(driverCode: string, pin = '1234') {
-  const normalizedEmail = `${driverCode.toLowerCase().replace(/[^a-z0-9]/g, '')}@driver.ui.edu.ng`;
+export async function loginRider(emailOrPhone: string, password = 'password123') {
+  const res = await apiFetch('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: emailOrPhone, password }),
+  });
+  setSession(res.accessToken, res.user);
+  return res;
+}
 
-  try {
-    const res = await apiFetch('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: normalizedEmail, password: pin }),
-    });
-    setSession(res.accessToken, res.user);
+export async function registerDriver(payload: {
+  name: string;
+  email?: string;
+  phone: string;
+  password?: string;
+  vehicleType: 'keke' | 'car';
+  plateNumber: string;
+}) {
+  const normalizedEmail = payload.email || `${payload.phone.replace(/[^0-9]/g, '')}@driver.ui.edu.ng`;
+  const res = await apiFetch('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: payload.name,
+      email: normalizedEmail,
+      phone: payload.phone,
+      password: payload.password || '1234',
+      role: 'driver',
+      vehicleType: payload.vehicleType,
+      plateNumber: payload.plateNumber,
+    }),
+  });
+  setSession(res.accessToken, res.user);
+  return res;
+}
 
-    // Ensure driver profile exists
-    try {
-      await apiFetch('/api/drivers', {
-        method: 'POST',
-        body: JSON.stringify({
-          plateNumber: `OYO-${driverCode.slice(-4) || '2456'}`,
-          vehicleType: 'keke',
-          status: 'available',
-        }),
-      });
-    } catch {
-      // Profile may already exist
-    }
-
-    return res;
-  } catch (err: any) {
-    // Auto-create driver for demo
-    const regRes = await apiFetch('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: `Driver ${driverCode}`,
-        email: normalizedEmail,
-        password: pin,
-        role: 'driver',
-      }),
-    });
-    setSession(regRes.accessToken, regRes.user);
-
-    try {
-      await apiFetch('/api/drivers', {
-        method: 'POST',
-        body: JSON.stringify({
-          plateNumber: `OYO-${driverCode.slice(-4) || '2456'}`,
-          vehicleType: 'keke',
-          status: 'available',
-        }),
-      });
-    } catch {
-      // Ignore
-    }
-
-    return regRes;
-  }
+export async function loginDriver(emailOrPhone: string, password = '1234') {
+  const res = await apiFetch('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: emailOrPhone, password }),
+  });
+  setSession(res.accessToken, res.user);
+  return res;
 }
 
 // ---------------- STOPS & FARE API ----------------
@@ -166,7 +143,7 @@ export async function fetchFareEstimate(pickup: { lat: number; lng: number }, de
 export async function bookRide(payload: {
   pickup: { lat: number; lng: number; name?: string };
   destination: { lat: number; lng: number; name?: string };
-  driverId: string;
+  driverId?: string;
 }) {
   return apiFetch('/api/rides', {
     method: 'POST',
@@ -186,10 +163,14 @@ export async function cancelRideRequest(rideId: string) {
 
 // ---------------- DRIVER DASHBOARD API ----------------
 
-export async function setDriverStatus(status: 'available' | 'busy' | 'offline', hubId?: string | null) {
+export async function setDriverStatus(
+  status: 'available' | 'busy' | 'offline',
+  hubId?: string | null,
+  coordinates?: { lat: number; lng: number }
+) {
   return apiFetch('/api/drivers/status', {
     method: 'PATCH',
-    body: JSON.stringify({ status, hubId }),
+    body: JSON.stringify({ status, hubId, coordinates }),
   });
 }
 
@@ -207,5 +188,11 @@ export async function respondToDriverRide(rideId: string, action: 'accept' | 'de
 export async function markRideCompleted(rideId: string) {
   return apiFetch(`/api/rides/${rideId}/complete`, {
     method: 'PATCH',
+  });
+}
+
+export async function seedLiveDrivers() {
+  return apiFetch('/api/drivers/seed-demo', {
+    method: 'POST',
   });
 }

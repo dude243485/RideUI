@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowDown, AlertCircle } from 'lucide-react';
+import { ArrowDown, AlertCircle, Phone, UserCheck } from 'lucide-react';
 import {
   ScreenShell, Button, CountdownRing, StatusBanner, SkeletonBlock,
 } from '../../components/ui';
@@ -16,12 +16,13 @@ export function D3Request() {
 
   const ride = state?.ride;
   const riderName = ride?.rider?.name || 'Student';
-  const from = ride?.pickup?.name || ride?.pickupHub?.name || 'Tedder Hall';
-  const to = ride?.destination?.name || ride?.destinationHub?.name || 'Main Gate';
+  const riderPhone = ride?.rider?.phone || '';
+  const from = ride?.pickup?.name || ride?.pickupHub?.name || 'UI Main Gate';
+  const to = ride?.destination?.name || ride?.destinationHub?.name || 'Tedder Hall';
   const fare = ride?.fare || 150;
 
   useEffect(() => {
-    const t = setTimeout(() => setViewState('loaded'), 600);
+    const t = setTimeout(() => setViewState('loaded'), 400);
     return () => clearTimeout(t);
   }, []);
 
@@ -49,17 +50,26 @@ export function D3Request() {
       }
     }
     setResponding(false);
-    navigate('/driver/trip', { state: { ride: matchedData || ride, riderName, from, to, fare } });
+    navigate('/driver/trip', {
+      state: {
+        ride: matchedData || ride,
+        riderName,
+        riderPhone,
+        from,
+        to,
+        fare,
+      },
+    });
   }
 
   return (
     <ScreenShell className="bg-surface">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-white">
-        <span className="text-base font-bold text-ink">Incoming Request</span>
-        <span className="text-xs text-muted">Auto-declines when timer ends</span>
+        <span className="text-base font-bold text-ink">Incoming Student Request</span>
+        <span className="text-xs text-muted">Auto-declines when timer expires</span>
       </div>
 
-      <div className="flex-1 flex flex-col px-4 pt-8 gap-8">
+      <div className="flex-1 flex flex-col px-4 pt-6 gap-6 overflow-y-auto">
         {viewState === 'loading' && (
           <div className="flex flex-col gap-6">
             <SkeletonBlock h="h-28" w="w-28" className="rounded-full mx-auto" />
@@ -85,24 +95,43 @@ export function D3Request() {
         {viewState === 'loaded' && (
           <>
             <div className="flex justify-center">
-              <CountdownRing total={20} onExpire={decline} />
+              <CountdownRing total={30} onExpire={decline} />
             </div>
 
-            <p className="text-center text-base text-muted">
-              Request from <span className="font-bold text-ink">{riderName}</span> · <span className="font-bold text-brand-600">₦{fare}</span>
-            </p>
+            {/* Student Info Card */}
+            <div className="bg-white border border-border rounded-xl p-4 shadow-sm text-center">
+              <div className="flex items-center justify-center gap-1.5 text-xs text-brand-600 font-bold uppercase tracking-wider mb-1">
+                <UserCheck size={16} /> Verified UI Student
+              </div>
+              <p className="text-2xl font-bold text-ink">{riderName}</p>
+              {riderPhone && (
+                <div className="mt-2">
+                  <a
+                    href={`tel:${riderPhone}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-brand-600 font-bold text-xs border border-brand-200 hover:bg-brand-100 transition-colors"
+                  >
+                    <Phone size={14} /> Call Student ({riderPhone})
+                  </a>
+                </div>
+              )}
+              <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-sm">
+                <span className="text-muted font-medium">Trip Tariff:</span>
+                <span className="text-xl font-bold text-ink">₦{fare}</span>
+              </div>
+            </div>
 
-            <div className="bg-white border border-border rounded-xl p-6 flex flex-col items-center gap-4">
-              <div className="text-center">
-                <p className="text-xs text-muted uppercase tracking-widest mb-1">FROM</p>
-                <p className="text-3xl font-bold text-ink leading-tight">{from}</p>
+            {/* Route Landmarks */}
+            <div className="bg-white border border-border rounded-xl p-5 flex flex-col items-center gap-3 shadow-sm">
+              <div className="text-center w-full">
+                <p className="text-xs text-muted uppercase tracking-widest mb-1 font-bold">PICK UP AT</p>
+                <p className="text-2xl font-bold text-brand-600 leading-tight">{from}</p>
               </div>
-              <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center">
-                <ArrowDown size={20} className="text-brand-600" />
+              <div className="w-9 h-9 rounded-full border border-border flex items-center justify-center bg-surface">
+                <ArrowDown size={18} className="text-muted" />
               </div>
-              <div className="text-center">
-                <p className="text-xs text-muted uppercase tracking-widest mb-1">TO</p>
-                <p className="text-3xl font-bold text-ink leading-tight">{to}</p>
+              <div className="text-center w-full">
+                <p className="text-xs text-muted uppercase tracking-widest mb-1 font-bold">DROP OFF AT</p>
+                <p className="text-2xl font-bold text-accent leading-tight">{to}</p>
               </div>
             </div>
           </>
@@ -116,7 +145,7 @@ export function D3Request() {
           disabled={viewState !== 'loaded'}
           onClick={accept}
         >
-          ACCEPT
+          ACCEPT ORDER
         </Button>
         <Button
           variant="danger"

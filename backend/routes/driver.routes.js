@@ -5,10 +5,14 @@ import {
   createDriverProfile,
   listDrivers,
   updateDriverProfile,
+  seedDemoDrivers,
 } from '../controllers/driver.controller.js';
 import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
 
 const router = Router();
+
+// Demo helper to seed/activate live drivers
+router.post('/seed-demo', seedDemoDrivers);
 
 // Driver self actions
 router.get('/me', requireAuth, getMyProfile);

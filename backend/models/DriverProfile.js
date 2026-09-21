@@ -30,6 +30,10 @@ const driverProfileSchema = new mongoose.Schema(
       ref: 'Hub',
       default: null,
     },
+    currentCoordinates: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
   },
   { timestamps: true }
 );

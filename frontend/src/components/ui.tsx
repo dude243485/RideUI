@@ -103,6 +103,9 @@ export function DriverCard({
   initials,
   vehicle,
   eta,
+  phone,
+  plateNumber,
+  distanceKm,
   selected,
   onSelect,
 }: {
@@ -111,6 +114,9 @@ export function DriverCard({
   initials: string;
   vehicle: string;
   eta: string;
+  phone?: string;
+  plateNumber?: string;
+  distanceKm?: number;
   selected?: boolean;
   onSelect?: () => void;
 }) {
@@ -136,8 +142,22 @@ export function DriverCard({
 
       {/* info */}
       <div className="flex-1 min-w-0">
-        <p className="text-base font-semibold text-ink truncate">{name}</p>
-        <p className="text-sm text-muted truncate">{vehicle} · {eta}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-base font-semibold text-ink truncate">{name}</p>
+          {distanceKm != null && (
+            <span className="text-xs text-muted font-medium bg-surface px-1.5 py-0.5 rounded border border-border">
+              {distanceKm} km
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted truncate mt-0.5">
+          {vehicle} {plateNumber ? `· ${plateNumber}` : ''} · {eta}
+        </p>
+        {phone && (
+          <p className="text-xs text-brand-600 font-semibold mt-1">
+            📞 {phone}
+          </p>
+        )}
       </div>
 
       {/* badge */}
